@@ -1,2 +1,4 @@
 ﻿  Source.cpp
-  Mi_Plantilla.vcxproj -> D:\upc\Computacion Grafica\Final\Plantilla-Mia\Mi_Plantilla\x64\Debug\Mi_Plantilla.exe
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(62): warning C4715: 'Ventana::verificandoErrores': not all control paths return a value
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(162): warning C4715: 'ProgramShaders::verificandoErrores': not all control paths return a value
+  Mi_Plantilla.vcxproj -> C:\Users\joaqu\Source\Repos\Final_Grafico\x64\Debug\Mi_Plantilla.exe

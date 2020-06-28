@@ -1,27 +1,19 @@
 #ifndef __ICHIGL_HPP__
 #define __ICHIGL_HPP__
 
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <iomanip>
-#include <iostream>
-#include <unordered_map>
-#include <stb_image.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <glad/glad.h>
-#include <glm/glm.hpp>
-#include <json/json.h>
-#include <glm/gtc/matrix_transform.hpp>
+
 
 #define Ancho 2340
 #define Largo 1080
 
 using namespace std;
-using namespace glm;
-using namespace Json;
 
 void re_size(GLFWwindow* window, int width, int height)
 {
@@ -61,6 +53,7 @@ public:
 			glfwTerminate();
 			return true;
 		}
+		cout <<"algo: "<< ventana << endl;
 		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		{
 			std::cout << "Failed to initialize GLAD" << std::endl;
@@ -69,7 +62,9 @@ public:
 	}
 	void inicializar(){
 		this->instanciando();
+		cout << "algo: " << ventana << endl;
 		this->ventana = this->creandoVentana("Trabajo Final", Ancho, Largo);
+		cout << "algo: " << ventana << endl;
 		glfwMakeContextCurrent(this->ventana);
 		if (this->verificandoErrores()) {
 			return;
@@ -112,6 +107,7 @@ public:
 
 		//creando los id de los shaders;
 		GLuint idVertex, idFragment;
+
 		idVertex = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(idVertex, 1, &origenVertex, nullptr);
 		glCompileShader(idVertex);
@@ -134,7 +130,7 @@ public:
 
 	}
 	~ProgramShaders() {
-
+		glDeleteProgram(shaderProgram);
 	}
 	void usar() {
 		glUseProgram(this->shaderProgram);
@@ -166,9 +162,8 @@ public:
 	}
 };
 class Objeto {
-	unsigned int VBO;
+	unsigned int VBO,VAO,EBO;
 	string vertexShader, fragmentShader;
-	ProgramShaders* program;
 	float vertices[12] = {
 		 0.5f,  0.5f, 0.0f,  // top right
 		 0.5f, -0.5f, 0.0f,  // bottom right
@@ -181,38 +176,55 @@ class Objeto {
 	};
 
 public:
+	ProgramShaders* program;
+
+
 	Objeto(string vertex, string fragment) {
 		program = new ProgramShaders(vertex.c_str(), fragment.c_str());
-		this->VboInicializar();
+		glGenVertexArrays(1, &this->VAO);
+		glGenBuffers(1, &this->VBO);
+		glGenBuffers(1, &this->EBO);
+		this->bindVAO();
+		this->inicializarVertices();
+		this->activarAtributo(0,3,3,0);
 	}
-	void VboInicializar() {
-		glGenBuffers(1, &VBO);
+	~Objeto() {
+		glDeleteVertexArrays(1,&this->VAO);
+		glDeleteBuffers(1, &this->VBO);
+		glDeleteBuffers(1, &this->EBO);
+	}
+	void inicializarVertices() {
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(this->indices), indices, GL_STATIC_DRAW);
 	}
-	void activarAtributo(short posEnArreglo, short cantDatosAtrib, short spaceEntreVertex) {
-		glVertexAttribPointer(posEnArreglo, cantDatosAtrib, GL_FLOAT, GL_FALSE, cantDatosAtrib * sizeof(float), (void*)0);
+	void activarAtributo(short posEnArreglo, short cantDatosAtrib,short stride, short offset) {					//esto tenra que cambiar
+		glVertexAttribPointer(posEnArreglo, cantDatosAtrib, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(posEnArreglo);
 	}
-	void activarArrayAtributos() {
+	void bindVAO() {
+		glBindVertexArray(this->VAO);
+	}
+	void inciailizarEBO() {
 
 	}
 };
 class Controladora {
-	Ventana* ventana;
-	ProgramShaders* shaders;
+	Ventana *ventana;
+	Objeto *cuadrado;
 public:
 	Controladora() {
 		ventana = new Ventana();
-	//	shaders = new ProgramShaders("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs");
+		ventana->inicializar();
+		this->cuadrado = new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs");
 	}
 	~Controladora() {
 		delete this->ventana;
 	}
 
 	void correr() {
-		ventana->inicializar();
 		while (!glfwWindowShouldClose(ventana->getVentana()))
 		{
 
@@ -222,6 +234,9 @@ public:
 			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 
+			this->cuadrado->program->usar();
+			cuadrado->bindVAO();
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 			//checkear y llamar eventos ademas de resize del buffer
 			glfwSwapBuffers(ventana->getVentana());
 			glfwPollEvents();
