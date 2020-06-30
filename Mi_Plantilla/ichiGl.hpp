@@ -8,6 +8,8 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <stb_image.h>
+
 
 
 #define Ancho 2340
@@ -162,14 +164,32 @@ public:
 	}
 };
 class Objeto {
-	unsigned int VBO,VAO,EBO;
+	unsigned int VBO,VAO,EBO,textura;
 	string vertexShader, fragmentShader;
 	ProgramShaders* program;
-	float vertices[24] = {
-		 0.5f,  0.5f, 0.0f, 1.f,  0.0f, 0.0f,  // top right
-		 0.5f, -0.5f, 0.0f, 0.f,  1.0f, 0.0f,// bottom right
-		-0.5f, -0.5f, 0.0f, 0.f,  0.0f, 1.0f,// bottom left
-		-0.5f,  0.5f, 0.0f, 1.f,  1.0f, 1.0f,// top left 
+	unsigned char* data_imagen;
+	class Imagen {
+	public:
+		int width, height, nrChannels;
+		unsigned char* data_imagen;
+		Imagen(string ubicacionImagen) {
+			stbi_set_flip_vertically_on_load(true);
+			//cout << data_imagen << endl;
+			this->data_imagen = stbi_load(ubicacionImagen.c_str(), &width, &height, &nrChannels, 0);
+		}
+	};
+	Imagen *imagen;
+	float coordenas[8] = {
+		1.0f, 1.0f,   // top-right corner
+		1.0f, 0.0f,  // lower-right corner	
+		0.0f, 0.0f,  // lower-left corner  
+		0.0f, 1.0f  // top-right corner
+	};
+	float vertices[32] = {
+		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
 	};	
 	unsigned int indices[6] = {  // note that we start from 0!
 	  0, 1, 3,  // first Triangle
@@ -180,19 +200,30 @@ public:
 
 	Objeto(string vertex, string fragment) {
 		program = new ProgramShaders(vertex.c_str(), fragment.c_str());
+		this->imagen = new Imagen("Texturas/once_Punch_Horizontal.jpg");
 		glGenVertexArrays(1, &this->VAO);
 		glGenBuffers(1, &this->VBO);
 		glGenBuffers(1, &this->EBO);
+		glGenTextures(1, &this->textura);
 		this->bindVAO();
 		this->inicializarVertices();
-		this->activarAtributo(0,3,6,0);
-		this->activarAtributo(1, 3, 6, 3);
+		this->setAtributo(0,3,8,0);
+		this->setAtributo(1, 3, 8, 3);
+		this->setAtributo(2, 2, 8, 6);
+		//orden importante, activar textura despues de su atributo;
+		this->bindTextura();
+
+		this->inicializarImgaen();
+
 
 	}
 	~Objeto() {
 		glDeleteVertexArrays(1,&this->VAO);
 		glDeleteBuffers(1, &this->VBO);
 		glDeleteBuffers(1, &this->EBO);
+	}
+	ProgramShaders* getProgram() {
+		return this->program;
 	}
 	void inicializarVertices() {
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -201,7 +232,7 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(this->indices), indices, GL_STATIC_DRAW);
 	}
-	void activarAtributo(short posEnArreglo, short cantDatosAtrib,short stride, short offset) {					
+	void setAtributo(short posEnArreglo, short cantDatosAtrib,short stride, short offset) {					
 		// ver las imagenes de opengl como referencia: https://learnopengl.com/Getting-started/Shaders
 		//stride: cant de bytes entre el mismo tipo de atributos (aqui los ponemos en cantidad de floats y luego lo multiplicamos por su tamaño)
 		//offset: cant de bytes desde el inicio del vertex al atributo (aqui los ponemos en cantidad de floats y luego lo multiplicamos por su tamaño)
@@ -211,8 +242,8 @@ public:
 	void bindVAO() {
 		glBindVertexArray(this->VAO);
 	}
-	ProgramShaders* getProgram() {
-		return this->program;
+	void bindTextura() {
+		glBindTexture(GL_TEXTURE_2D, this->textura);
 	}
 	void dandoColor() {
 		//obtenemos el tiempo (desde que comenzo el programa?)
@@ -229,8 +260,27 @@ public:
 	void setUniform(string uniform, short dataLength, float *info) {
 		GLint uniformLoc = glGetUniformLocation(this->program->getProgram(), uniform.c_str());
 		if (uniformLoc == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
-		
-
+	}
+	void inicializarImgaen() {
+		this->bordeImagen();
+		if (this->imagen->data_imagen)
+		{
+			//glBindTexture(GL_TEXTURE_2D, this->textura);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->imagen->width, this->imagen->height, 0, GL_RGB, GL_UNSIGNED_BYTE, this->imagen->data_imagen);
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
+		else {
+			std::cout << "Failed to load texture" << std::endl;
+		}
+		stbi_image_free(this->imagen->data_imagen);
+	}
+	void bordeImagen() {
+		//Se indica que en tanto el eje x=s como y=t, se use el metodo mirrored_Repeat para llenar lo que falte para encajar la imagen en el objeto;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		//Se especifica que metodo usar al agrandar o disminuir la imagen;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //solo se suna mipmap al minimizar la imagen, si se pone en agrandar la imagen no abra efecto y dara error
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 };
 class Controladora {
@@ -258,6 +308,7 @@ public:
 
 			this->cuadrado->getProgram()->usar();
 			//this->cuadrado->dandoColor();
+			this->cuadrado->bindTextura();
 			cuadrado->bindVAO();
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 			//checkear y llamar eventos ademas de resize del buffer

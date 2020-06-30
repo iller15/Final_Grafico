@@ -155,6 +155,7 @@
     <ClCompile Include="stb_image.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="ichiGl.hpp" />
   </ItemGroup>
   <ItemGroup>
