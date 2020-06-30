@@ -62,9 +62,7 @@ public:
 	}
 	void inicializar(){
 		this->instanciando();
-		cout << "algo: " << ventana << endl;
 		this->ventana = this->creandoVentana("Trabajo Final", Ancho, Largo);
-		cout << "algo: " << ventana << endl;
 		glfwMakeContextCurrent(this->ventana);
 		if (this->verificandoErrores()) {
 			return;
@@ -126,7 +124,6 @@ public:
 
 		glDeleteShader(idFragment);
 		glDeleteShader(idVertex);
-		cout << "todo bien" << endl;
 
 	}
 	~ProgramShaders() {
