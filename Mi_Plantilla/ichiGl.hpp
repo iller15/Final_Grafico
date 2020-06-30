@@ -53,7 +53,6 @@ public:
 			glfwTerminate();
 			return true;
 		}
-		cout <<"algo: "<< ventana << endl;
 		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		{
 			std::cout << "Failed to initialize GLAD" << std::endl;
@@ -129,6 +128,10 @@ public:
 	~ProgramShaders() {
 		glDeleteProgram(shaderProgram);
 	}
+	
+	GLuint getProgram() {
+		return this->shaderProgram;
+	}
 	void usar() {
 		glUseProgram(this->shaderProgram);
 	}
@@ -161,20 +164,19 @@ public:
 class Objeto {
 	unsigned int VBO,VAO,EBO;
 	string vertexShader, fragmentShader;
-	float vertices[12] = {
-		 0.5f,  0.5f, 0.0f,  // top right
-		 0.5f, -0.5f, 0.0f,  // bottom right
-		-0.5f, -0.5f, 0.0f,  // bottom left
-		-0.5f,  0.5f, 0.0f   // top left 
-	};
+	ProgramShaders* program;
+	float vertices[24] = {
+		 0.5f,  0.5f, 0.0f, 1.f,  0.0f, 0.0f,  // top right
+		 0.5f, -0.5f, 0.0f, 0.f,  1.0f, 0.0f,// bottom right
+		-0.5f, -0.5f, 0.0f, 0.f,  0.0f, 1.0f,// bottom left
+		-0.5f,  0.5f, 0.0f, 1.f,  1.0f, 1.0f,// top left 
+	};	
 	unsigned int indices[6] = {  // note that we start from 0!
 	  0, 1, 3,  // first Triangle
 	  1, 2, 3   // second Triangle
 	};
 
 public:
-	ProgramShaders* program;
-
 
 	Objeto(string vertex, string fragment) {
 		program = new ProgramShaders(vertex.c_str(), fragment.c_str());
@@ -183,7 +185,9 @@ public:
 		glGenBuffers(1, &this->EBO);
 		this->bindVAO();
 		this->inicializarVertices();
-		this->activarAtributo(0,3,3,0);
+		this->activarAtributo(0,3,6,0);
+		this->activarAtributo(1, 3, 6, 3);
+
 	}
 	~Objeto() {
 		glDeleteVertexArrays(1,&this->VAO);
@@ -197,14 +201,35 @@ public:
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(this->indices), indices, GL_STATIC_DRAW);
 	}
-	void activarAtributo(short posEnArreglo, short cantDatosAtrib,short stride, short offset) {					//esto tenra que cambiar
-		glVertexAttribPointer(posEnArreglo, cantDatosAtrib, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
+	void activarAtributo(short posEnArreglo, short cantDatosAtrib,short stride, short offset) {					
+		// ver las imagenes de opengl como referencia: https://learnopengl.com/Getting-started/Shaders
+		//stride: cant de bytes entre el mismo tipo de atributos (aqui los ponemos en cantidad de floats y luego lo multiplicamos por su tamaño)
+		//offset: cant de bytes desde el inicio del vertex al atributo (aqui los ponemos en cantidad de floats y luego lo multiplicamos por su tamaño)
+		glVertexAttribPointer(posEnArreglo, cantDatosAtrib, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset*sizeof(float)));
 		glEnableVertexAttribArray(posEnArreglo);
 	}
 	void bindVAO() {
 		glBindVertexArray(this->VAO);
 	}
-	void inciailizarEBO() {
+	ProgramShaders* getProgram() {
+		return this->program;
+	}
+	void dandoColor() {
+		//obtenemos el tiempo (desde que comenzo el programa?)
+		float time = glfwGetTime();
+		//funcion para que redValue siempre este entre 0 y 1;
+		float redValue = (sin(time) / 2.0f) + 0.5f;
+		//obteniendo la ubicacion del uniform que queremos;
+		int colorVertxLocation = glGetUniformLocation(program->getProgram(), "color");
+		//verificando que nos haya dado una locacion;
+		if (colorVertxLocation == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
+		//pasando el nuevo valor al uniform; IMPORTANTE: activar (useProgram) al shader program en el que se encuentra el uniform;
+		glUniform4f(colorVertxLocation, 0.f, redValue*0.5, redValue, 1);
+	}
+	void setUniform(string uniform, short dataLength, float *info) {
+		GLint uniformLoc = glGetUniformLocation(this->program->getProgram(), uniform.c_str());
+		if (uniformLoc == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
+		
 
 	}
 };
@@ -231,7 +256,8 @@ public:
 			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			this->cuadrado->program->usar();
+			this->cuadrado->getProgram()->usar();
+			//this->cuadrado->dandoColor();
 			cuadrado->bindVAO();
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 			//checkear y llamar eventos ademas de resize del buffer
