@@ -8,5 +8,6 @@ uniform sampler2D textura;
 
 void main()
 {
-    FragColor = texture(textura,texCoord);
+    //FragColor es una variable de opengl para el color y es vec4
+    FragColor = texture(textura,texCoord)*vec4(color,1.0);
 };

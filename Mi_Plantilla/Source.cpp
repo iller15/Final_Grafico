@@ -14,6 +14,7 @@ int main() {
  
 
     
+    
     //Objeto* algo = new Objeto(vertices);
     Controladora* controladora = new Controladora();
     controladora->correr();

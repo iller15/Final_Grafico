@@ -9,13 +9,17 @@
 #include <fstream>
 #include <sstream>
 #include <stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 
 
 #define Ancho 2340
-#define Largo 1080
+#define Alto 1080
 
 using namespace std;
+using namespace glm;
 
 void re_size(GLFWwindow* window, int width, int height)
 {
@@ -63,12 +67,12 @@ public:
 	}
 	void inicializar(){
 		this->instanciando();
-		this->ventana = this->creandoVentana("Trabajo Final", Ancho, Largo);
+		this->ventana = this->creandoVentana("Trabajo Final", Ancho, Alto);
 		glfwMakeContextCurrent(this->ventana);
 		if (this->verificandoErrores()) {
 			return;
 		}
-		glViewport(0, 0, Ancho, Largo);
+		glViewport(0, 0, Ancho, Alto);
 		glfwSetFramebufferSizeCallback(this->ventana, re_size);
 
 	} 
@@ -164,15 +168,19 @@ public:
 	}
 };
 class Objeto {
-	unsigned int VBO,VAO,EBO,textura;
+	GLuint VBO,VAO,EBO,textura;
 	string vertexShader, fragmentShader;
 	ProgramShaders* program;
 	unsigned char* data_imagen;
+	//	 model servira para mover el objeto, view probablemente servira para mover la escena;
 	class Imagen {
 	public:
 		int width, height, nrChannels;
+		char tipo[5];
 		unsigned char* data_imagen;
 		Imagen(string ubicacionImagen) {
+			//para obtner el tipo de imagen
+			ubicacionImagen.copy(tipo, ubicacionImagen.length() - ubicacionImagen.find("."), ubicacionImagen.find(".")+1);
 			stbi_set_flip_vertically_on_load(true);
 			//cout << data_imagen << endl;
 			this->data_imagen = stbi_load(ubicacionImagen.c_str(), &width, &height, &nrChannels, 0);
@@ -198,9 +206,10 @@ class Objeto {
 
 public:
 
-	Objeto(string vertex, string fragment) {
+	Objeto(string vertex, string fragment,string textura) {
+		//this->projection = mat4(1.0f);
 		program = new ProgramShaders(vertex.c_str(), fragment.c_str());
-		this->imagen = new Imagen("Texturas/once_Punch_Horizontal.jpg");
+		this->imagen = new Imagen(textura);
 		glGenVertexArrays(1, &this->VAO);
 		glGenBuffers(1, &this->VBO);
 		glGenBuffers(1, &this->EBO);
@@ -213,7 +222,9 @@ public:
 		//orden importante, activar textura despues de su atributo;
 		this->bindTextura();
 
-		this->inicializarImgaen();
+		this->inicializarImgaen(this->imagen->tipo);
+	//	this->iniciarProjection();
+
 
 
 	}
@@ -243,8 +254,10 @@ public:
 		glBindVertexArray(this->VAO);
 	}
 	void bindTextura() {
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, this->textura);
 	}
+	//PRUEBAS DE LEARNOPENGL
 	void dandoColor() {
 		//obtenemos el tiempo (desde que comenzo el programa?)
 		float time = glfwGetTime();
@@ -257,16 +270,64 @@ public:
 		//pasando el nuevo valor al uniform; IMPORTANTE: activar (useProgram) al shader program en el que se encuentra el uniform;
 		glUniform4f(colorVertxLocation, 0.f, redValue*0.5, redValue, 1);
 	}
-	void setUniform(string uniform, short dataLength, float *info) {
-		GLint uniformLoc = glGetUniformLocation(this->program->getProgram(), uniform.c_str());
-		if (uniformLoc == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
+	void volteando() {
+		GLuint trans;
+		//Creando matriz identidad (diagonal de ceros)
+		mat4 transformada = mat4(1.0f);
+		//para rotar le pasamos los parametro (matriz a transformar,angulo que queremos girar,en que eje queremos girar (entre 0 y 1 los valores));
+		//transformada = scale(transformada, vec3(0.5, 0.5, 0.5));
+		transformada = rotate(transformada, radians(-55.f), vec3(1.0f, 0.0f, 0.0));
+		this->setUniformMatrixfv(trans, transformada, "trans");
 	}
-	void inicializarImgaen() {
+	void primer3d() {
+		mat4 model = mat4(1.0f);
+		mat4 view = mat4(1.0f);
+		mat4 projection = mat4(1.0f);
+		GLuint uModel, uView, uProjection;
+		transMatrix(model, "Rotacion", vec3(1.f, 0.f, 0.f), -55);
+		transMatrix(view, "Traslacion", vec3(.0f, .0f, -3.f));
+		projection = perspective(radians(45.0f), (float)(Ancho / Alto), 0.1f, 100.0f);
+		this->setUniformMatrixfv(uModel, model, "model");
+		this->setUniformMatrixfv(uView, view, "view");
+		this->setUniformMatrixfv(uProjection, projection, "projection");
+
+	}
+	// */
+	void transMatrix(mat4 &matrix,string tipo, vec3 data, float angulo = 0) {
+		//para transformar una matrix en el aspecto que queramos
+		if (tipo == "Traslacion") {
+			matrix = translate(matrix, data);
+		}
+		else if (tipo == "Rotacion") {
+			matrix = rotate(matrix, radians(angulo), data);
+		}
+		else {
+			matrix = scale(matrix, data);
+		}
+
+	}
+	void getUniform(GLuint &idUniform,string uniform) {
+		idUniform= glGetUniformLocation(this->program->getProgram(), uniform.c_str());
+		if (idUniform == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
+	}
+	void setUniformMatrixfv(GLuint &idUniform, mat4 transformada, string uniform) {
+		this->getUniform(idUniform, uniform);
+		//				idUniform; matrices a mandar; transponer matrix; la matriz en si ( la funcion es para que opegnGl lo acepte ya que viene desde glm
+		glUniformMatrix4fv(idUniform, 1, GL_FALSE, value_ptr(transformada));
+	}
+	void inicializarImgaen(string tipo) {
 		this->bordeImagen();
 		if (this->imagen->data_imagen)
 		{
-			//glBindTexture(GL_TEXTURE_2D, this->textura);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->imagen->width, this->imagen->height, 0, GL_RGB, GL_UNSIGNED_BYTE, this->imagen->data_imagen);
+			if (tipo == "jpg") {
+				//glBindTexture(GL_TEXTURE_2D, this->textura);
+											//Como queremos guardar la data;						Como llega la data;
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->imagen->width, this->imagen->height, 0, GL_RGB, GL_UNSIGNED_BYTE, this->imagen->data_imagen);
+			}
+			else
+			{                                  //por ahora se quedra en RGB y no en RGBA
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->imagen->width, this->imagen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->imagen->data_imagen);
+			}
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 		else {
@@ -282,6 +343,11 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //solo se suna mipmap al minimizar la imagen, si se pone en agrandar la imagen no abra efecto y dara error
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
+	void iniciarProjection() {
+		//this->projection = perspective(radians(45.0f), (float)(Ancho / Alto), 0.1f, 100.0f);
+		//this->setUniformMatrixfv(uProjection, projection, "projection");
+	}
+
 };
 class Controladora {
 	Ventana *ventana;
@@ -290,7 +356,8 @@ public:
 	Controladora() {
 		ventana = new Ventana();
 		ventana->inicializar();
-		this->cuadrado = new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs");
+		//aqui voy a tener que leer otro archivo
+		this->cuadrado = new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs", "Texturas/once_Punch_Horizontal.jpg");
 	}
 	~Controladora() {
 		delete this->ventana;
@@ -307,7 +374,7 @@ public:
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			this->cuadrado->getProgram()->usar();
-			//this->cuadrado->dandoColor();
+			this->cuadrado->primer3d();
 			this->cuadrado->bindTextura();
 			cuadrado->bindVAO();
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
