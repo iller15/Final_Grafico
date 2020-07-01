@@ -72,7 +72,6 @@ public:
 		if (this->verificandoErrores()) {
 			return;
 		}
-		glEnable(GL_DEPTH_TEST);
 		glViewport(0, 0, Ancho, Alto);
 		glfwSetFramebufferSizeCallback(this->ventana, re_size);
 
@@ -169,7 +168,8 @@ public:
 	}
 };
 class Objeto {
-	GLuint VBO,VAO,EBO,textura;
+	GLuint VBO, VAO, EBO, textura;
+	mat4 projection = mat4(1.0f);
 	string vertexShader, fragmentShader;
 	ProgramShaders* program;
 	unsigned char* data_imagen;
@@ -264,11 +264,10 @@ public:
 		this->inicializarImgaen(this->imagen->tipo);
 
 		this->program->usar();
-		glUniform1i(glGetUniformLocation(program->getProgram(), "textura"), 0);
-		//glUniform1i(glGetUniformLocation(this->program->getProgram(), "textura"), 1);
-	//	this->iniciarProjection();
 
-
+		this->setInt("textura", 0);
+		
+		this->iniciarProjection();
 
 	}
 	~Objeto() {
@@ -328,20 +327,17 @@ public:
 		program->usar();
 		mat4 model = mat4(1.0f);
 		mat4 view = mat4(1.0f);
-		mat4 projection = mat4(1.0f);
-		GLuint uModel, uView, uProjection;
+		
+		
 		transMatrix(model, "Rotacion", vec3(0.5f, 1.0f, 0.0f),true, (float)glfwGetTime());
 		//transMatrix(model, "Escalar", vec3(.5f, 0.5f, 0.5f));
 		transMatrix(view, "Traslacion", vec3(.0f, .0f, -3.0f));
+		
+		
 		projection = perspective(radians(45.0f), (float)(Ancho / Alto), 0.1f, 100.0f);
-		//this->setUniformMatrixfv(uModel, model, "model");
-		//this->setUniformMatrixfv(uView, view, "view");
-		uModel = getUniform(uModel, "model");
-		glUniformMatrix4fv(uModel, 1, GL_FALSE, &model[0][0]);
-		uView = getUniform(uView, "view");
-		glUniformMatrix4fv(uView, 1, GL_FALSE, &view[0][0]);
-		//this->setUniformMatrixfv(uProjection, projection, "projection");
-		glUniformMatrix4fv(glGetUniformLocation(program->getProgram(),  "projection"), 1, GL_FALSE, &projection[0][0]);
+
+		this->setMat4("model", model);
+		this->setMat4("view", view);
 
 	}
 	// */
@@ -361,15 +357,27 @@ public:
 		}
 
 	}
-	GLuint getUniform(GLuint &idUniform,string uniform) {
+	void getUniform(GLuint &idUniform,string uniform) {
 		idUniform= glGetUniformLocation(this->program->getProgram(), uniform.c_str());
-		if (idUniform == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
-		else return idUniform;
+		if (idUniform == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl;  }
+		
 	}
 	void setUniformMatrixfv(GLuint &idUniform, mat4 transformada, string uniform) {
 		this->getUniform(idUniform, uniform);
 		//				idUniform; matrices a mandar; transponer matrix; la matriz en si ( la funcion es para que opegnGl lo acepte ya que viene desde glm
 		glUniformMatrix4fv(idUniform, 1, GL_FALSE, value_ptr(transformada));
+	}
+	void setInt(const std::string& name, int value) const
+	{
+		GLuint id = glGetUniformLocation(this->program->getProgram(), name.c_str());
+		if (id == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
+		glUniform1i(glGetUniformLocation(this->program->getProgram(), name.c_str()), value);
+	}
+	void setMat4(const std::string& name, const glm::mat4& mat) const
+	{
+		GLuint id = glGetUniformLocation(this->program->getProgram(), name.c_str());
+		if (id== -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
+		glUniformMatrix4fv(id, 1, GL_FALSE, &mat[0][0]);
 	}
 	void inicializarImgaen(string tipo) {
 		this->bordeImagen();
@@ -400,8 +408,8 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 	void iniciarProjection() {
-		//this->projection = perspective(radians(45.0f), (float)(Ancho / Alto), 0.1f, 100.0f);
-		//this->setUniformMatrixfv(uProjection, projection, "projection");
+		this->projection = perspective(radians(45.0f), (float)(Ancho / Alto), 0.1f, 100.0f);
+		this->setMat4("projection", projection);
 	}
 
 };
@@ -412,8 +420,9 @@ public:
 	Controladora() {
 		ventana = new Ventana();
 		ventana->inicializar();
+		glEnable(GL_DEPTH_TEST);
 		//aqui voy a tener que leer otro archivo
-		this->cuadrado = new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs", "Texturas/algo.png");
+		this->cuadrado = new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs", "Texturas/catlul.png");
 	}
 	~Controladora() {
 		delete this->ventana;
