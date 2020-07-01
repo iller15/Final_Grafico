@@ -47,7 +47,7 @@ public:
 		return glfwCreateWindow(ancho, alto, titulo, NULL, NULL);
 	}
 	
-	void cerrarVentana(GLFWwindow* window)
+	void inputTeclado(GLFWwindow* window)
 	{
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, true);
@@ -72,6 +72,7 @@ public:
 		if (this->verificandoErrores()) {
 			return;
 		}
+		glEnable(GL_DEPTH_TEST);
 		glViewport(0, 0, Ancho, Alto);
 		glfwSetFramebufferSizeCallback(this->ventana, re_size);
 
@@ -193,12 +194,49 @@ class Objeto {
 		0.0f, 0.0f,  // lower-left corner  
 		0.0f, 1.0f  // top-right corner
 	};
-	float vertices[32] = {
-		 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-		 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-		-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
-	};	
+	float vertices[180] = {
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	};
 	unsigned int indices[6] = {  // note that we start from 0!
 	  0, 1, 3,  // first Triangle
 	  1, 2, 3   // second Triangle
@@ -209,20 +247,25 @@ public:
 	Objeto(string vertex, string fragment,string textura) {
 		//this->projection = mat4(1.0f);
 		program = new ProgramShaders(vertex.c_str(), fragment.c_str());
+		this->program->usar();
 		this->imagen = new Imagen(textura);
 		glGenVertexArrays(1, &this->VAO);
 		glGenBuffers(1, &this->VBO);
-		glGenBuffers(1, &this->EBO);
-		glGenTextures(1, &this->textura);
+		//glGenBuffers(1, &this->EBO);
 		this->bindVAO();
 		this->inicializarVertices();
-		this->setAtributo(0,3,8,0);
-		this->setAtributo(1, 3, 8, 3);
-		this->setAtributo(2, 2, 8, 6);
+		this->setAtributo(0,3,5,0);
+		this->setAtributo(1, 2, 5, 3);
+		//this->setAtributo(1, 3, 6, 3);
 		//orden importante, activar textura despues de su atributo;
+		glGenTextures(1, &this->textura);
 		this->bindTextura();
 
 		this->inicializarImgaen(this->imagen->tipo);
+
+		this->program->usar();
+		glUniform1i(glGetUniformLocation(program->getProgram(), "textura"), 0);
+		//glUniform1i(glGetUniformLocation(this->program->getProgram(), "textura"), 1);
 	//	this->iniciarProjection();
 
 
@@ -240,8 +283,8 @@ public:
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(this->indices), indices, GL_STATIC_DRAW);
+		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
+		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(this->indices), indices, GL_STATIC_DRAW);
 	}
 	void setAtributo(short posEnArreglo, short cantDatosAtrib,short stride, short offset) {					
 		// ver las imagenes de opengl como referencia: https://learnopengl.com/Getting-started/Shaders
@@ -254,8 +297,10 @@ public:
 		glBindVertexArray(this->VAO);
 	}
 	void bindTextura() {
-		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, this->textura);
+	}
+	void activarTextura() {
+		glActiveTexture(GL_TEXTURE0);
 	}
 	//PRUEBAS DE LEARNOPENGL
 	void dandoColor() {
@@ -280,35 +325,46 @@ public:
 		this->setUniformMatrixfv(trans, transformada, "trans");
 	}
 	void primer3d() {
+		program->usar();
 		mat4 model = mat4(1.0f);
 		mat4 view = mat4(1.0f);
 		mat4 projection = mat4(1.0f);
 		GLuint uModel, uView, uProjection;
-		transMatrix(model, "Rotacion", vec3(1.f, 0.f, 0.f), -55);
-		transMatrix(view, "Traslacion", vec3(.0f, .0f, -3.f));
+		transMatrix(model, "Rotacion", vec3(0.5f, 1.0f, 0.0f),true, (float)glfwGetTime());
+		//transMatrix(model, "Escalar", vec3(.5f, 0.5f, 0.5f));
+		transMatrix(view, "Traslacion", vec3(.0f, .0f, -3.0f));
 		projection = perspective(radians(45.0f), (float)(Ancho / Alto), 0.1f, 100.0f);
-		this->setUniformMatrixfv(uModel, model, "model");
-		this->setUniformMatrixfv(uView, view, "view");
-		this->setUniformMatrixfv(uProjection, projection, "projection");
+		//this->setUniformMatrixfv(uModel, model, "model");
+		//this->setUniformMatrixfv(uView, view, "view");
+		uModel = getUniform(uModel, "model");
+		glUniformMatrix4fv(uModel, 1, GL_FALSE, &model[0][0]);
+		uView = getUniform(uView, "view");
+		glUniformMatrix4fv(uView, 1, GL_FALSE, &view[0][0]);
+		//this->setUniformMatrixfv(uProjection, projection, "projection");
+		glUniformMatrix4fv(glGetUniformLocation(program->getProgram(),  "projection"), 1, GL_FALSE, &projection[0][0]);
 
 	}
 	// */
-	void transMatrix(mat4 &matrix,string tipo, vec3 data, float angulo = 0) {
+	void transMatrix(mat4 &matrix,string tipo, vec3 data,bool radianes = true, float angulo = 0) {
 		//para transformar una matrix en el aspecto que queramos
 		if (tipo == "Traslacion") {
 			matrix = translate(matrix, data);
 		}
 		else if (tipo == "Rotacion") {
-			matrix = rotate(matrix, radians(angulo), data);
+			if(radianes)
+				matrix = rotate(matrix,	 (angulo), data);
+			else
+				matrix = rotate(matrix, radians(angulo), data);
 		}
 		else {
 			matrix = scale(matrix, data);
 		}
 
 	}
-	void getUniform(GLuint &idUniform,string uniform) {
+	GLuint getUniform(GLuint &idUniform,string uniform) {
 		idUniform= glGetUniformLocation(this->program->getProgram(), uniform.c_str());
 		if (idUniform == -1) { cout << "ERROR:: No se pudo encontrar el uniform" << endl; }
+		else return idUniform;
 	}
 	void setUniformMatrixfv(GLuint &idUniform, mat4 transformada, string uniform) {
 		this->getUniform(idUniform, uniform);
@@ -321,7 +377,7 @@ public:
 		{
 			if (tipo == "jpg") {
 				//glBindTexture(GL_TEXTURE_2D, this->textura);
-											//Como queremos guardar la data;						Como llega la data;
+											//Como queremos guardar la data;						 Como llega la data;
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->imagen->width, this->imagen->height, 0, GL_RGB, GL_UNSIGNED_BYTE, this->imagen->data_imagen);
 			}
 			else
@@ -340,7 +396,7 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		//Se especifica que metodo usar al agrandar o disminuir la imagen;
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //solo se suna mipmap al minimizar la imagen, si se pone en agrandar la imagen no abra efecto y dara error
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); //solo se suna mipmap al minimizar la imagen, si se pone en agrandar la imagen no abra efecto y dara error
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 	void iniciarProjection() {
@@ -357,7 +413,7 @@ public:
 		ventana = new Ventana();
 		ventana->inicializar();
 		//aqui voy a tener que leer otro archivo
-		this->cuadrado = new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs", "Texturas/once_Punch_Horizontal.jpg");
+		this->cuadrado = new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs", "Texturas/algo.png");
 	}
 	~Controladora() {
 		delete this->ventana;
@@ -368,16 +424,21 @@ public:
 		{
 
 			//inputs de teclado
-			ventana->cerrarVentana(ventana->getVentana());
+			ventana->inputTeclado(ventana->getVentana());
 			//rendering commands
 			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			this->cuadrado->activarTextura();
+			this->cuadrado->bindTextura();
 
 			this->cuadrado->getProgram()->usar();
+
 			this->cuadrado->primer3d();
-			this->cuadrado->bindTextura();
+			//this->cuadrado->bindTextura();
 			cuadrado->bindVAO();
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
 			//checkear y llamar eventos ademas de resize del buffer
 			glfwSwapBuffers(ventana->getVentana());
 			glfwPollEvents();
