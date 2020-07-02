@@ -43,5 +43,11 @@
     <Text Include="Shaders\VertexShader.vs">
       <Filter>Shader</Filter>
     </Text>
+    <Text Include="LuzFragment.fs">
+      <Filter>Shader</Filter>
+    </Text>
+    <Text Include="LuzVertex.vs">
+      <Filter>Shader</Filter>
+    </Text>
   </ItemGroup>
 </Project>

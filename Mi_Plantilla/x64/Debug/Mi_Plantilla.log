@@ -1,6 +1,13 @@
 ﻿  Source.cpp
-C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(307,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(315,48): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
-C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(67): warning C4715: 'Ventana::verificandoErrores': not all control paths return a value
-C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(168): warning C4715: 'ProgramShaders::verificandoErrores': not all control paths return a value
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(109,22): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(121,18): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(515,14): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(523,48): warning C4244: 'argument': conversion from 'double' to 'GLfloat', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(566,61): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(778,92): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(825,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(826,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(834,39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(206): warning C4715: 'Ventana::verificandoErrores': not all control paths return a value
+C:\Users\joaqu\source\repos\Final_Grafico\Mi_Plantilla\ichiGl.hpp(311): warning C4715: 'ProgramShaders::verificandoErrores': not all control paths return a value
   Mi_Plantilla.vcxproj -> C:\Users\joaqu\Source\Repos\Final_Grafico\x64\Debug\Mi_Plantilla.exe

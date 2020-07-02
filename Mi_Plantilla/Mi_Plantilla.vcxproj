@@ -161,6 +161,8 @@
   <ItemGroup>
     <Text Include="Shaders\FragmentShader.fs" />
     <Text Include="Shaders\VertexShader.vs" />
+    <Text Include="LuzVertex.vs" />
+    <Text Include="LuzFragment.fs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
