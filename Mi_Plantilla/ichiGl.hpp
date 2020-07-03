@@ -14,8 +14,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
-
-
 #define Ancho 2340
 #define Alto 1080
 
@@ -359,7 +357,6 @@ class Objeto {
 			//para obtner el tipo de imagen
 			ubicacionImagen.copy(tipo, ubicacionImagen.length() - ubicacionImagen.find("."), ubicacionImagen.find(".")+1);
 			stbi_set_flip_vertically_on_load(true);
-			//cout << data_imagen << endl;
 			this->data_imagen = stbi_load(ubicacionImagen.c_str(), &width, &height, &nrChannels, 0);
 		}
 	};
@@ -496,7 +493,6 @@ public:
 		for (short i = 0; i < this->attribVertex->size(); i++) {
 			Vertex atributoVertex = attribVertex->at(i);
 			setAtributo(atributoVertex.posicion,atributoVertex.cantDatos,stride,atributoVertex.offset);
-			cout << atributoVertex.posicion << atributoVertex.cantDatos << stride << atributoVertex.offset << endl;
 		}
 
 	}
@@ -722,10 +718,6 @@ public:
 		vector<Vertex>* atributos2 = new vector<Vertex>;
 		atributos2->push_back(Vertex(3, 0, 0));
 		atributos2->push_back(Vertex(2, 1, 3));
-
-
-		
-
 
 		//aqui voy a tener que leer otro archivo
 		this->objetos->push_back(new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs", "Texturas/catlul.png",10,2,atributos));
