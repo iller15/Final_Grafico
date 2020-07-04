@@ -320,34 +320,32 @@ public:
 		glUniformMatrix4fv(id, 1, GL_FALSE, &mat[0][0]);
 	}
 };
+class Modelo {
+	vec3 posModelo;
+	mat4  transformada = mat4(1.0f), projectionRecivido = mat4(1.0f);
+	ProgramShaders* program;
+public:
+	Modelo(mat4 modelo, mat4 view, mat4 projection, ProgramShaders* program) :transformada(modelo), projectionRecivido(projection), program(program) {}
+	Modelo(vec3 pos) : posModelo(pos) {}
+	void mandarMVP() {
+		mat4 view = mat4(1.0f);
+
+		program->setMat4("modelo", transformada);
+		program->setMat4("view", view);
+	}
+
+	mat4 getTransformada() {
+		return this->transformada;
+	}
+	void setTransformfada(mat4 trans) {
+		this->transformada = trans;
+	}
+	vec3 getPosModelo() {
+		return this->posModelo;
+	}
+
+};
 class Objeto {
-	class Modelo{
-		mat4  transformada = mat4(1.0f), camara = mat4(1.0f), projectionRecivido =mat4(1.0f);
-		ProgramShaders* program;
-	public:
-		Modelo(mat4 modelo, mat4 view, mat4 projection,ProgramShaders* program):transformada(modelo), camara(view),projectionRecivido(projection), program(program){}
-		Modelo() {}
-		void mandarMVP() {
-			mat4 view = mat4(1.0f);
-			
-			program->setMat4("modelo",transformada);
-			program->setMat4("view", view);
-		}
-		
-		mat4 getTransformada() {
-			return this->transformada;
-		}
-		void setTransformfada(mat4 trans) {
-			this->transformada = trans;
-		}
-		mat4 getCamara() {
-			return this->camara;
-		}
-		void setCamara(mat4 view) {
-			this->camara = view;
-		}
-		
-	};
 	class Imagen {
 	public:
 		int width, height, nrChannels;
@@ -378,7 +376,7 @@ class Objeto {
 		0.0f, 0.0f,  // lower-left corner  
 		0.0f, 1.0f  // top-right corner
 	};
-	float vertices[180] = {
+	float notVertices[180] = {
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
 		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -421,6 +419,7 @@ class Objeto {
 		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
+	GLfloat* vertices = notVertices;
 	unsigned int indices[6] = {  // note that we start from 0!
 	  0, 1, 3,  // first Triangle
 	  1, 2, 3   // second Triangle
@@ -428,13 +427,10 @@ class Objeto {
 
 public:
 
-	Objeto(string vertex, string fragment, string textura, short Modelos, short atributos,vector<Vertex>* attribVertex, bool luz = false): nModelos(Modelos), nAtributos(atributos), attribVertex(attribVertex){
-		//this->projection = mat4(1.0f);
+	Objeto(string vertex, string fragment, string textura, short Modelos, short atributos,vector<Vertex>* attribVertex, GLfloat* vertices, bool luz = false):vertices(vertices), nModelos(Modelos), nAtributos(atributos), attribVertex(attribVertex){
+		this->modelos = new vector<Modelo>;
 		program = new ProgramShaders(vertex.c_str(), fragment.c_str());
 		this->program->usar();
-		this->modelos = new vector<Modelo>;
-		for (short i = 0; i < this->nModelos; i++)
-			this->modelos->push_back(Modelo());
 		
 		if(!luz) this->imagen = new Imagen(textura);
 
@@ -447,10 +443,7 @@ public:
 			this->stride += attribVertex->at(i).cantDatos;
 		}
 		this->setAtributos();
-		/*this->setAtributo(0,3,5,0);
-		this->setAtributo(1, 2, 5, 3);*/
-		//this->setAtributo(1, 3, 6, 3);
-
+		
 		//orden importante, activar textura despues de su atributo;
 		this->program->usar();
 		if (!luz) {
@@ -476,7 +469,7 @@ public:
 	}
 	void inicializarBuffers() {
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) * 180 , vertices, GL_STATIC_DRAW);
 
 		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->EBO);
 		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(this->indices), indices, GL_STATIC_DRAW);
@@ -702,7 +695,7 @@ class Controladora {
 	};
 
 public:
-	Controladora() {
+	Controladora() {	
 		this->objetos = new vector<Objeto*>;
 		ventana = new Ventana();
 		ventana->inicializar();
@@ -711,18 +704,20 @@ public:
 		//para que desaparezca el mouse;
 		glfwSetInputMode(ventana->getVentana(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-		vector<Vertex>* atributos = new vector<Vertex>;
-		atributos->push_back(Vertex(3, 0, 0));
-		atributos->push_back(Vertex(2, 1, 3));
+		
+		// cagando modelos: por ahora es manual xd;
+		cargadoModelos();
+		
 
-		vector<Vertex>* atributos2 = new vector<Vertex>;
-		atributos2->push_back(Vertex(3, 0, 0));
-		atributos2->push_back(Vertex(2, 1, 3));
+		for (short i = 0; i < this->objetos->at(0)->getNModelos(); i++)
+			this->objetos->at(0)->getModelos()->push_back(Modelo(this->cubePositions[i]));
+		
+		this->objetos->at(1)->getModelos()->push_back(Modelo(vec3(0.0f, 1.0f, 0.0f)));
 
-		//aqui voy a tener que leer otro archivo
-		this->objetos->push_back(new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs", "Texturas/catlul.png",10,2,atributos));
-		this->objetos->push_back(new Objeto("Shaders/VertexShader.vs", "Shaders/FragmentShader.fs", "Texturas/once_Punch_Horizontal.jpg", 1, 2,atributos2));
+		this->objetos->at(2)->getModelos()->push_back(Modelo(vec3(1.1f, 5.0f, -4.0f)));
 
+		
+ 
 		this->camara = new Camara();
 	}
 	~Controladora() {
@@ -730,6 +725,7 @@ public:
 	}
 
 	void correr() {
+		//leer archivos 
 		while (!glfwWindowShouldClose(ventana->getVentana()))
 		{
 			//cogiendo tiempos
@@ -749,6 +745,7 @@ public:
 
 				//this->cuadrado->primer3d();
 				//this->cuadrado->bindTextura();
+
 				//esto debera estar en una funcion
 				//this->cuadrado->setProjection();
 				mat4 projection = mat4(1.0f);
@@ -761,14 +758,11 @@ public:
 
 				objetos->at(i)->bindVAO();
 				for (short e = 0; e < this->objetos->at(i)->getNModelos(); e++) {
-					mat4 model = mat4(1.0f);
-					if (i == 1) {
-						this->objetos->at(i)->transMatrix(model, "Traslacion", vec3(0.0f, 1.0f, 0.0f));
-					}
-					else {
-						this->objetos->at(i)->transMatrix(model, "Traslacion", this->cubePositions[e]);
-						this->objetos->at(i)->transMatrix(model, "Rotacion", vec3(1.0f, 0.3f, .5f), false, e * glfwGetTime());
-					}
+					mat4 model = mat4(1.0f);					
+					
+					this->objetos->at(i)->transMatrix(model, "Traslacion",this->objetos->at(i)->getModelos()->at(e).getPosModelo());
+					this->objetos->at(i)->transMatrix(model, "Rotacion", vec3(1.0f, 0.3f, .5f), false, e * glfwGetTime());
+					
 					this->objetos->at(i)->getProgram()->setMat4("model", model);
 					//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 					glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -782,6 +776,19 @@ public:
 	}
 	Camara* getCamara() {
 		return  this->camara;
+	}
+	void cargadoModelos() {
+		vector<Vertex>* atributos = new vector<Vertex>;
+		atributos->push_back(Vertex(3, 0, 0));
+		atributos->push_back(Vertex(2, 1, 3));
+
+		vector<Vertex>* atributos2 = new vector<Vertex>;
+		atributos2->push_back(Vertex(3, 0, 0));
+		atributos2->push_back(Vertex(2, 1, 3));
+		//aqui voy a tener que leer otro archivo
+		this->objetos->push_back(new Objeto("Shaders/Reflejo1.vs", "Shaders/Reflejo1.fs", "Texturas/catlul.png", 10, 2, atributos, caja));
+		this->objetos->push_back(new Objeto("Shaders/Reflejo1.vs", "Shaders/Reflejo1.fs", "Texturas/once_Punch_Horizontal.jpg", 1, 2, atributos2, vertices));
+		this->objetos->push_back(new Objeto("Shaders/LuzVertex.vs", "Shaders/LuzFragment.fs", "", 1, 2, atributos2, vertices, true));
 	}
 
 };

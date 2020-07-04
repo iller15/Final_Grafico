@@ -43,11 +43,19 @@
     <Text Include="Shaders\VertexShader.vs">
       <Filter>Shader</Filter>
     </Text>
-    <Text Include="LuzFragment.fs">
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\Reflejo1.fs">
       <Filter>Shader</Filter>
-    </Text>
-    <Text Include="LuzVertex.vs">
+    </None>
+    <None Include="Shaders\Reflejo1.vs">
       <Filter>Shader</Filter>
-    </Text>
+    </None>
+    <None Include="Shaders\LuzFragment.fs">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shaders\LuzVertex.vs">
+      <Filter>Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>
