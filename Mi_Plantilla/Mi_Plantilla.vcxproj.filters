@@ -45,16 +45,22 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\Reflejo1.fs">
-      <Filter>Shader</Filter>
-    </None>
-    <None Include="Shaders\Reflejo1.vs">
-      <Filter>Shader</Filter>
-    </None>
     <None Include="Shaders\LuzFragment.fs">
       <Filter>Shader</Filter>
     </None>
     <None Include="Shaders\LuzVertex.vs">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shaders\AmbientalTextura.vs">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shaders\AmbientalTextura.fs">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shaders\Difusa.vs">
+      <Filter>Shader</Filter>
+    </None>
+    <None Include="Shaders\Difusa.fs">
       <Filter>Shader</Filter>
     </None>
   </ItemGroup>

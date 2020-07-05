@@ -37,11 +37,13 @@ enum Tecla {
 	IZQUIEDA,
 	DERECHA
 };
-
-struct Vertex {
-	int cantDatos, posicion, offset;
-	Vertex(short cantDatos, short posicion, short offset): cantDatos(cantDatos),posicion(posicion),offset(offset) {}
-	};
+class Atributo {
+public:
+	//cantidad de floats en el atrivuto ejemplo en la posicion hay 3 floats
+	short tamaño;
+	string nombre;
+	Atributo(short size, string name): tamaño(size),nombre(name) {}
+};
 class Camara {
 	vec3 posCamara = vec3(0.f, 0.f, 3.f);
 	 //por ahora
@@ -313,6 +315,10 @@ public:
 		if (id == -1) { cout << "ERROR:: No se pudo encontrar el uniform: "<< name << endl; }
 		glUniform1i(glGetUniformLocation(this->getProgram(), name.c_str()), value);
 	}
+	void setVec3(const string& name, const vec3& value) const
+	{
+		glUniform3fv(glGetUniformLocation(this->shaderProgram, name.c_str()), 1, &value[0]);
+	}
 	void setMat4(const std::string& name, const glm::mat4& mat)
 	{
 		GLuint id = glGetUniformLocation(this->getProgram(), name.c_str());
@@ -321,12 +327,12 @@ public:
 	}
 };
 class Modelo {
-	vec3 posModelo;
+	vec3 posModelo,color;
 	mat4  transformada = mat4(1.0f), projectionRecivido = mat4(1.0f);
 	ProgramShaders* program;
 public:
 	Modelo(mat4 modelo, mat4 view, mat4 projection, ProgramShaders* program) :transformada(modelo), projectionRecivido(projection), program(program) {}
-	Modelo(vec3 pos) : posModelo(pos) {}
+	Modelo(vec3 pos, vec3 color) : posModelo(pos), color(color) {}
 	void mandarMVP() {
 		mat4 view = mat4(1.0f);
 
@@ -343,6 +349,10 @@ public:
 	vec3 getPosModelo() {
 		return this->posModelo;
 	}
+	vec3 getColorModelo() {
+		return this->color;
+	}
+
 
 };
 class Objeto {
@@ -368,7 +378,7 @@ class Objeto {
 	//	 model servira para mover el objeto, view probablemente servira para mover la escena;
 	vector<Modelo>* modelos;
 	Imagen *imagen;
-	vector<Vertex>* attribVertex;
+	vector<Atributo>* attribVertex;
 
 	float coordenas[8] = {
 		1.0f, 1.0f,   // top-right corner
@@ -427,7 +437,7 @@ class Objeto {
 
 public:
 
-	Objeto(string vertex, string fragment, string textura, short Modelos, short atributos,vector<Vertex>* attribVertex, GLfloat* vertices, bool luz = false):vertices(vertices), nModelos(Modelos), nAtributos(atributos), attribVertex(attribVertex){
+	Objeto(string vertex, string fragment, string textura, short Modelos, short atributos,vector<Atributo>* attribVertex, GLfloat* vertices, bool luz = false):vertices(vertices), nModelos(Modelos), nAtributos(atributos), attribVertex(attribVertex){
 		this->modelos = new vector<Modelo>;
 		program = new ProgramShaders(vertex.c_str(), fragment.c_str());
 		this->program->usar();
@@ -439,9 +449,7 @@ public:
 		//glGenBuffers(1, &this->EBO);
 		this->bindVAO();
 		this->inicializarBuffers();
-		for (short i = 0; i < this->attribVertex->size(); i++) {
-			this->stride += attribVertex->at(i).cantDatos;
-		}
+		
 		this->setAtributos();
 		
 		//orden importante, activar textura despues de su atributo;
@@ -482,10 +490,17 @@ public:
 		glEnableVertexAttribArray(posEnArreglo);
 	}
 	void setAtributos() {
-		
+		//para sacar el offset
+		short offset = 0;
+		//sacando el stride
 		for (short i = 0; i < this->attribVertex->size(); i++) {
-			Vertex atributoVertex = attribVertex->at(i);
-			setAtributo(atributoVertex.posicion,atributoVertex.cantDatos,stride,atributoVertex.offset);
+			this->stride += attribVertex->at(i).tamaño;
+		}
+		//usando el iterador como posicion del atributo, no se si salga como error mas adelante;
+		for (short posicion = 0; posicion < this->attribVertex->size(); posicion++) {
+			short cantDatos = attribVertex->at(posicion).tamaño;
+			setAtributo(posicion,cantDatos,stride,offset);
+			offset += cantDatos;
 		}
 
 	}
@@ -622,6 +637,9 @@ public:
 	void setProjection(ProgramShaders* program) {
 
 	}
+	bool getLuz() {
+		return this->luz;
+	}
 	//temporal
 	void temporalSetView(mat4 view = mat4(1.0f)) {
 		transMatrix(view, "Traslacion", vec3(.0f, .0f, -3.0f));
@@ -681,6 +699,49 @@ class Controladora {
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
 	float* caja = vertices;
+	float normales[216] = {
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+	};
 	vec3 cubePositions[10] = {
 		vec3(0.0f,  0.0f,  0.0f),
 		vec3(2.0f,  5.0f, -15.0f),
@@ -710,11 +771,14 @@ public:
 		
 
 		for (short i = 0; i < this->objetos->at(0)->getNModelos(); i++)
-			this->objetos->at(0)->getModelos()->push_back(Modelo(this->cubePositions[i]));
+			this->objetos->at(0)->getModelos()->push_back(Modelo(this->cubePositions[i],vec3(1,1,1)));
 		
-		this->objetos->at(1)->getModelos()->push_back(Modelo(vec3(0.0f, 1.0f, 0.0f)));
+		this->objetos->at(1)->getModelos()->push_back(Modelo(vec3(0.0f, 1.0f, 0.0f),vec3(1, 1, 1)));
 
-		this->objetos->at(2)->getModelos()->push_back(Modelo(vec3(1.1f, 5.0f, -4.0f)));
+		this->objetos->at(2)->getModelos()->push_back(Modelo(vec3(1.1f, 5.0f, -4.0f), vec3(1, 1, 1)));
+
+		this->objetos->at(3)->getModelos()->push_back(Modelo(vec3(-0.3f, 5.0f, -4.5f), vec3(0, 1, 1)));
+
 
 		
  
@@ -757,13 +821,21 @@ public:
 				this->objetos->at(i)->setView(view);
 
 				objetos->at(i)->bindVAO();
-				for (short e = 0; e < this->objetos->at(i)->getNModelos(); e++) {
+				for (short e = 0; e < this->objetos->at(i)->getModelos()->size(); e++) {
+					Modelo modelo = this->objetos->at(i)->getModelos()->at(e);
+					this->objetos->at(i)->getProgram()->setVec3("posCamara",this->camara->getPosCamara());
+					//pasando su informacion al shader.
 					mat4 model = mat4(1.0f);					
-					
-					this->objetos->at(i)->transMatrix(model, "Traslacion",this->objetos->at(i)->getModelos()->at(e).getPosModelo());
-					this->objetos->at(i)->transMatrix(model, "Rotacion", vec3(1.0f, 0.3f, .5f), false, e * glfwGetTime());
+					this->objetos->at(i)->getProgram()->setVec3("colorModelo", modelo.getColorModelo());
+					this->objetos->at(i)->transMatrix(model, "Traslacion",modelo.getPosModelo());
+					this->objetos->at(i)->transMatrix(model, "Rotacion", vec3(1.0f, 0.3f, .5f), false, e+5 * glfwGetTime());
 					
 					this->objetos->at(i)->getProgram()->setMat4("model", model);
+
+					if (!this->objetos->at(i)->getLuz()) {
+						this->objetos->at(i)->getProgram()->setVec3("posLuz", this->objetos->at(2)->getModelos()->at(0).getPosModelo());
+					}
+
 					//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 					glDrawArrays(GL_TRIANGLES, 0, 36);
 				}
@@ -778,17 +850,24 @@ public:
 		return  this->camara;
 	}
 	void cargadoModelos() {
-		vector<Vertex>* atributos = new vector<Vertex>;
-		atributos->push_back(Vertex(3, 0, 0));
-		atributos->push_back(Vertex(2, 1, 3));
+		vector<Atributo>* atributos = new vector<Atributo>;
+		atributos->push_back(Atributo(3,"Posicion"));
+		atributos->push_back(Atributo(2, "CoordTextura"));
 
-		vector<Vertex>* atributos2 = new vector<Vertex>;
-		atributos2->push_back(Vertex(3, 0, 0));
-		atributos2->push_back(Vertex(2, 1, 3));
+		vector<Atributo>* atributos2 = new vector<Atributo>;
+		atributos2->push_back(Atributo(3, "Posicion"));
+		atributos2->push_back(Atributo(2, "CoordTextura"));
+
+		vector<Atributo>* aNormales = new vector<Atributo>;
+		aNormales->push_back(Atributo(3, "Posicion"));
+		aNormales->push_back(Atributo(3, "Normal"));
+
 		//aqui voy a tener que leer otro archivo
-		this->objetos->push_back(new Objeto("Shaders/Reflejo1.vs", "Shaders/Reflejo1.fs", "Texturas/catlul.png", 10, 2, atributos, caja));
-		this->objetos->push_back(new Objeto("Shaders/Reflejo1.vs", "Shaders/Reflejo1.fs", "Texturas/once_Punch_Horizontal.jpg", 1, 2, atributos2, vertices));
+		this->objetos->push_back(new Objeto("Shaders/AmbientalTextura.vs", "Shaders/AmbientalTextura.fs", "Texturas/catlul.png", 10, 2, atributos, caja));
+		this->objetos->push_back(new Objeto("Shaders/AmbientalTextura.vs", "Shaders/AmbientalTextura.fs", "Texturas/once_Punch_Horizontal.jpg", 1, 2, atributos2, vertices));
 		this->objetos->push_back(new Objeto("Shaders/LuzVertex.vs", "Shaders/LuzFragment.fs", "", 1, 2, atributos2, vertices, true));
+		this->objetos->push_back(new Objeto("Shaders/Difusa.vs", "Shaders/Difusa.fs", "", 1, 2, aNormales, normales, true));
+
 	}
 
 };
