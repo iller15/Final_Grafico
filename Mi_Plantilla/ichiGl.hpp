@@ -8,6 +8,8 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+//Según internet (Porque E1696)
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -63,6 +65,7 @@ void bezier(vec3* pControl, short n, vec3 &coord, short t) {
 		coord.z += coefBinomial(n, i) * pControl[i].z * pow(1 - t, n - i) * pow(t, i);
 	}
 }
+//========================= Fin ====================
 
 struct Vertex {
 	int cantDatos, posicion, offset;
