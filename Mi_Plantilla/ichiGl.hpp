@@ -16,6 +16,9 @@
 
 #define Ancho 2340
 #define Alto 1080
+#define nada 1000000
+
+
 
 using namespace std;
 using namespace glm;
@@ -319,6 +322,10 @@ public:
 	{
 		glUniform3fv(glGetUniformLocation(this->shaderProgram, name.c_str()), 1, &value[0]);
 	}
+	void setFloat(const string& name, float value) const
+	{
+		glUniform1f(glGetUniformLocation(this->shaderProgram, name.c_str()), value);
+	}
 	void setMat4(const std::string& name, const glm::mat4& mat)
 	{
 		GLuint id = glGetUniformLocation(this->getProgram(), name.c_str());
@@ -368,7 +375,7 @@ class Objeto {
 			this->data_imagen = stbi_load(ubicacionImagen.c_str(), &width, &height, &nrChannels, 0);
 		}
 	};
-	GLuint VBO, VAO, EBO, textura;
+	GLuint VBO, VAO, EBO, textura, especular = nada;
 	short nModelos, nAtributos, stride = 0;
 	bool luz;
 	string vertexShader, fragmentShader;
@@ -377,59 +384,11 @@ class Objeto {
 
 	//	 model servira para mover el objeto, view probablemente servira para mover la escena;
 	vector<Modelo>* modelos;
-	Imagen *imagen;
+	vector<Imagen*>* imagen;
 	vector<Atributo>* attribVertex;
 
-	float coordenas[8] = {
-		1.0f, 1.0f,   // top-right corner
-		1.0f, 0.0f,  // lower-right corner	
-		0.0f, 0.0f,  // lower-left corner  
-		0.0f, 1.0f  // top-right corner
-	};
-	float notVertices[180] = {
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-	};
-	GLfloat* vertices = notVertices;
+    
+	GLfloat* vertices;
 	unsigned int indices[6] = {  // note that we start from 0!
 	  0, 1, 3,  // first Triangle
 	  1, 2, 3   // second Triangle
@@ -437,12 +396,18 @@ class Objeto {
 
 public:
 
-	Objeto(string vertex, string fragment, string textura, short Modelos, short atributos,vector<Atributo>* attribVertex, GLfloat* vertices, bool luz = false):vertices(vertices), nModelos(Modelos), nAtributos(atributos), attribVertex(attribVertex){
+	Objeto(string vertex, string fragment, string textura,string especular, short Modelos, short atributos,vector<Atributo>* attribVertex, GLfloat* vertices, bool luz = false):vertices(vertices), nModelos(Modelos), nAtributos(atributos), attribVertex(attribVertex){
+		this->imagen = new vector<Imagen*>;
 		this->modelos = new vector<Modelo>;
+
 		program = new ProgramShaders(vertex.c_str(), fragment.c_str());
 		this->program->usar();
 		
-		if(!luz) this->imagen = new Imagen(textura);
+		if (textura != "") 
+			this->imagen->push_back(new Imagen(textura));
+		if (especular!= "") 
+			this->imagen->push_back(new Imagen(especular));
+
 
 		glGenVertexArrays(1, &this->VAO);
 		glGenBuffers(1, &this->VBO);
@@ -454,11 +419,24 @@ public:
 		
 		//orden importante, activar textura despues de su atributo;
 		this->program->usar();
-		if (!luz) {
+
+		if (textura != "") {
+			this->textura= loadTexture(textura.c_str());
+			/*
 			glGenTextures(1, &this->textura);
-			this->bindTextura();
-			this->inicializarImgaen(this->imagen->tipo);
-			this->program->setInt("textura", 0);
+			glBindTexture(GL_TEXTURE_2D, this->textura);
+			this->inicializarImgaen(this->imagen->at(0));*/
+			this->program->setInt("material.difusa", 0);
+		}
+
+
+		if (especular != "") {
+			/*
+			glGenTextures(1, &this->especular);
+			glBindTexture(GL_TEXTURE_2D, this->especular);
+			this->inicializarImgaen(this->imagen->at(1));*/
+			this->especular = loadTexture(especular.c_str());;
+			this->program->setInt("material.especular", 1);
 		}
 
 		
@@ -509,9 +487,19 @@ public:
 	}
 	void bindTextura() {
 		glBindTexture(GL_TEXTURE_2D, this->textura);
+		if (this->especular != nada)
+			glBindTexture(GL_TEXTURE_2D, this->especular);
 	}
 	void activarTextura() {
 		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, this->textura);
+
+		if (this->especular != nada) {
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, this->especular);
+		}
+
+
 	}
 	//PRUEBAS DE LEARNOPENGL
 	void dandoColor() {
@@ -600,32 +588,67 @@ public:
 		//				idUniform; matrices a mandar; transponer matrix; la matriz en si ( la funcion es para que opegnGl lo acepte ya que viene desde glm
 		glUniformMatrix4fv(idUniform, 1, GL_FALSE, value_ptr(transformada));
 	}
-	void inicializarImgaen(string tipo) {
+	void inicializarImgaen(Imagen* imagen) {
 		this->bordeImagen();
-		if (this->imagen->data_imagen)
+		if (imagen->data_imagen)
 		{
-			if (tipo == "jpg") {
-				//glBindTexture(GL_TEXTURE_2D, this->textura);
+			if (imagen->tipo == "jpg") {
 											//Como queremos guardar la data;						 Como llega la data;
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->imagen->width, this->imagen->height, 0, GL_RGB, GL_UNSIGNED_BYTE, this->imagen->data_imagen);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imagen->width, imagen->height, 0, GL_RGB, GL_UNSIGNED_BYTE, imagen->data_imagen);
 			}
 			else
 			{                                  //por ahora se quedra en RGB y no en RGBA
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->imagen->width, this->imagen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, this->imagen->data_imagen);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imagen->width, imagen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imagen->data_imagen);
 			}
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 		else {
 			std::cout << "Failed to load texture" << std::endl;
 		}
-		stbi_image_free(this->imagen->data_imagen);
+		stbi_image_free(imagen->data_imagen);
+	}
+	unsigned int loadTexture(char const* path)
+	{
+		unsigned int textureID;
+		glGenTextures(1, &textureID);
+
+		int width, height, nrComponents;
+		unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+		if (data)
+		{
+			GLenum format;
+			if (nrComponents == 1)
+				format = GL_RED;
+			else if (nrComponents == 3)
+				format = GL_RGB;
+			else if (nrComponents == 4)
+				format = GL_RGBA;
+
+			glBindTexture(GL_TEXTURE_2D, textureID);
+			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+			glGenerateMipmap(GL_TEXTURE_2D);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cout << "Texture failed to load at path: " << path << std::endl;
+			stbi_image_free(data);
+		}
+
+		return textureID;
 	}
 	void bordeImagen() {
 		//Se indica que en tanto el eje x=s como y=t, se use el metodo mirrored_Repeat para llenar lo que falte para encajar la imagen en el objeto;
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		//Se especifica que metodo usar al agrandar o disminuir la imagen;
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); //solo se suna mipmap al minimizar la imagen, si se pone en agrandar la imagen no abra efecto y dara error
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //solo se suna mipmap al minimizar la imagen, si se pone en agrandar la imagen no abra efecto y dara error
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 	short getNModelos() {
@@ -633,9 +656,6 @@ public:
 	}
 	vector<Modelo>* getModelos() {
 		return this->modelos;
-	}
-	void setProjection(ProgramShaders* program) {
-
 	}
 	bool getLuz() {
 		return this->luz;
@@ -742,6 +762,50 @@ class Controladora {
 	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
+	float todo[288] = {
+		// positions          // normals           // texture coords
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+	};
 	vec3 cubePositions[10] = {
 		vec3(0.0f,  0.0f,  0.0f),
 		vec3(2.0f,  5.0f, -15.0f),
@@ -770,14 +834,16 @@ public:
 		cargadoModelos();
 		
 
-		for (short i = 0; i < this->objetos->at(0)->getNModelos(); i++)
+		/*for (short i = 0; i < this->objetos->at(0)->getNModelos(); i++)
 			this->objetos->at(0)->getModelos()->push_back(Modelo(this->cubePositions[i],vec3(1,1,1)));
 		
-		this->objetos->at(1)->getModelos()->push_back(Modelo(vec3(0.0f, 1.0f, 0.0f),vec3(1, 1, 1)));
+		this->objetos->at(1)->getModelos()->push_back(Modelo(vec3(0.0f, 1.0f, 0.0f),vec3(1, 1, 1)));*/
 
-		this->objetos->at(2)->getModelos()->push_back(Modelo(vec3(1.1f, 5.0f, -4.0f), vec3(1, 1, 1)));
+		this->objetos->at(0)->getModelos()->push_back(Modelo(vec3(1.1f, 5.0f, -4.0f), vec3(1, 1, 1)));
 
-		this->objetos->at(3)->getModelos()->push_back(Modelo(vec3(-0.3f, 5.0f, -4.5f), vec3(0, 1, 1)));
+		//this->objetos->at(1)->getModelos()->push_back(Modelo(vec3(-0.3f, 3.0f, -2.5f), vec3(0, 1, 1)));
+
+		this->objetos->at(1)->getModelos()->push_back(Modelo(vec3(-0.3f, 3.0f, -2.5f), vec3(0, 1, 1)));
 
 
 		
@@ -802,13 +868,14 @@ public:
 			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			for (short i = 0; i < this->objetos->size(); i++) {
+				//me sorprende que no explote con modelos que no tienen imagens
 				this->objetos->at(i)->activarTextura();
-				this->objetos->at(i)->bindTextura();
+				//this->objetos->at(i)->bindTextura();
 
 				this->objetos->at(i)->getProgram()->usar();
 
 				//this->cuadrado->primer3d();
-				//this->cuadrado->bindTextura();
+				
 
 				//esto debera estar en una funcion
 				//this->cuadrado->setProjection();
@@ -826,14 +893,30 @@ public:
 					this->objetos->at(i)->getProgram()->setVec3("posCamara",this->camara->getPosCamara());
 					//pasando su informacion al shader.
 					mat4 model = mat4(1.0f);					
-					this->objetos->at(i)->getProgram()->setVec3("colorModelo", modelo.getColorModelo());
+					//this->objetos->at(i)->getProgram()->setVec3("colorModelo", modelo.getColorModelo());
 					this->objetos->at(i)->transMatrix(model, "Traslacion",modelo.getPosModelo());
 					this->objetos->at(i)->transMatrix(model, "Rotacion", vec3(1.0f, 0.3f, .5f), false, e+5 * glfwGetTime());
 					
 					this->objetos->at(i)->getProgram()->setMat4("model", model);
 
 					if (!this->objetos->at(i)->getLuz()) {
-						this->objetos->at(i)->getProgram()->setVec3("posLuz", this->objetos->at(2)->getModelos()->at(0).getPosModelo());
+						this->objetos->at(i)->bindTextura();
+
+						/*
+						this->objetos->at(i)->getProgram()->setVec3("material.ambiente", vec3(1.0f, 0.5f, 0.31f));
+						this->objetos->at(i)->getProgram()->setVec3("material.difusa", vec3(1.0f, 0.5f, 0.31f));*/
+						//this->objetos->at(i)->getProgram()->setVec3("material.especular", vec3(0.5f, 0.5f, 0.5f));
+						this->objetos->at(i)->getProgram()->setFloat("material.shininess", 64);
+
+						//cosas de la luz
+
+
+
+						this->objetos->at(i)->getProgram()->setVec3("luz.posLuz", this->objetos->at(0)->getModelos()->at(0).getPosModelo());
+						this->objetos->at(i)->getProgram()->setVec3("luz.ambiente", vec3(0.2f, 0.2f, 0.2f));
+						this->objetos->at(i)->getProgram()->setVec3("luz.difusa", vec3(0.5f, 0.5f, 0.5f));
+						this->objetos->at(i)->getProgram()->setVec3("luz.especular", vec3(1.0f, 1.0f, 1.0f));
+
 					}
 
 					//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -850,9 +933,9 @@ public:
 		return  this->camara;
 	}
 	void cargadoModelos() {
-		vector<Atributo>* atributos = new vector<Atributo>;
+		/*vector<Atributo>* atributos = new vector<Atributo>;
 		atributos->push_back(Atributo(3,"Posicion"));
-		atributos->push_back(Atributo(2, "CoordTextura"));
+		atributos->push_back(Atributo(2, "CoordTextura"));*/
 
 		vector<Atributo>* atributos2 = new vector<Atributo>;
 		atributos2->push_back(Atributo(3, "Posicion"));
@@ -862,11 +945,19 @@ public:
 		aNormales->push_back(Atributo(3, "Posicion"));
 		aNormales->push_back(Atributo(3, "Normal"));
 
+		vector<Atributo>* aTodo= new vector<Atributo>;
+		aTodo->push_back(Atributo(3, "Posicion"));
+		aTodo->push_back(Atributo(3, "Normal"));
+		aTodo->push_back(Atributo(2, "TextCoords"));
+
+
 		//aqui voy a tener que leer otro archivo
-		this->objetos->push_back(new Objeto("Shaders/AmbientalTextura.vs", "Shaders/AmbientalTextura.fs", "Texturas/catlul.png", 10, 2, atributos, caja));
-		this->objetos->push_back(new Objeto("Shaders/AmbientalTextura.vs", "Shaders/AmbientalTextura.fs", "Texturas/once_Punch_Horizontal.jpg", 1, 2, atributos2, vertices));
-		this->objetos->push_back(new Objeto("Shaders/LuzVertex.vs", "Shaders/LuzFragment.fs", "", 1, 2, atributos2, vertices, true));
-		this->objetos->push_back(new Objeto("Shaders/Difusa.vs", "Shaders/Difusa.fs", "", 1, 2, aNormales, normales, true));
+		//this->objetos->push_back(new Objeto("Shaders/AmbientalTextura.vs", "Shaders/AmbientalTextura.fs", "Texturas/catlul.png", 10, 2, atributos, caja));
+		//this->objetos->push_back(new Objeto("Shaders/AmbientalTextura.vs", "Shaders/AmbientalTextura.fs", "Texturas/once_Punch_Horizontal.jpg", 1, 2, atributos2, vertices));
+		this->objetos->push_back(new Objeto("Shaders/LuzVertex.vs", "Shaders/LuzFragment.fs", "", "", 1, 2, atributos2, vertices, true));
+		//this->objetos->push_back(new Objeto("Shaders/IluminacionIchi.vs", "Shaders/IluminacionIchi.fs", "", 1, 2, aNormales, normales, false));
+		this->objetos->push_back(new Objeto("Shaders/TexturaLight.vs", "Shaders/TexturaLight.fs", "Texturas/container.png","Texturas/container_specular.png", 1, 2, aTodo, todo, false));
+
 
 	}
 

@@ -163,12 +163,14 @@
     <Text Include="Shaders\VertexShader.vs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shaders\Difusa.fs" />
-    <None Include="Shaders\Difusa.vs" />
+    <None Include="Shaders\IluminacionIchi.fs" />
+    <None Include="Shaders\IluminacionIchi.vs" />
     <None Include="Shaders\LuzFragment.fs" />
     <None Include="Shaders\LuzVertex.vs" />
     <None Include="Shaders\AmbientalTextura.fs" />
     <None Include="Shaders\AmbientalTextura.vs" />
+    <None Include="Shaders\TexturaLight.fs" />
+    <None Include="Shaders\TexturaLight.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
