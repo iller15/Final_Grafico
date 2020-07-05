@@ -38,6 +38,32 @@ enum Tecla {
 	DERECHA
 };
 
+/*
+Hasta ahora no me compila en mi máquina, so fácil me faltan includes
+So... no lo siguiente no está demostrado xd
+*/
+//Tampoco fan de variables globales pero se puede agregar un vector
+//para progra dinámica (De preferencia en la clase Controladora para
+//el destructor)
+//Con inspiration de:
+//https://stackoverflow.com/questions/17556985/bezier-curve-using-c-opengl
+int factorial(int n){
+	if (n <= 1) return 1;
+	else return (n * factorial(n - 1));
+}
+float coefBinomial(int n,int k) {
+	return (float)factorial(n) / (factorial(k) * factorial(n - k));
+}
+void bezier(vec3* pControl, short n, vec3 &coord, short t) {
+	coord.x = 0;
+	for (short i = 0; i < n; i++) {
+		//Para cada punto de control
+		coord.x += coefBinomial(n, i) * pControl[i].x * pow(1 - t, n - i) * pow(t, i);
+		coord.y += coefBinomial(n, i) * pControl[i].y * pow(1 - t, n - i) * pow(t, i);
+		coord.z += coefBinomial(n, i) * pControl[i].z * pow(1 - t, n - i) * pow(t, i);
+	}
+}
+
 struct Vertex {
 	int cantDatos, posicion, offset;
 	Vertex(short cantDatos, short posicion, short offset): cantDatos(cantDatos),posicion(posicion),offset(offset) {}
