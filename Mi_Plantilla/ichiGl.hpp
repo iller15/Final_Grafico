@@ -8,8 +8,6 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-//Según internet (Porque E1696)
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
